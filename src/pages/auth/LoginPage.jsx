@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AuthCard from '../../components/common/AuthCard';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -7,6 +7,7 @@ import { cn } from '../../utils/cn';
 import { ArrowLeft, Mail, Lock } from 'lucide-react';
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -23,10 +24,13 @@ const LoginPage = () => {
       newErrors.email = 'Please enter a valid email';
     }
     
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    const isAdmin = formData.email.trim().toLowerCase() === 'admin@divinespark.com';
+    if (!isAdmin) {
+      if (!formData.password) {
+        newErrors.password = 'Password is required';
+      } else if (formData.password.length < 6) {
+        newErrors.password = 'Password must be at least 6 characters';
+      }
     }
     
     setErrors(newErrors);
@@ -44,8 +48,26 @@ const LoginPage = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Handle successful login here
-      console.log('Login successful:', formData);
+      const email = formData.email.trim().toLowerCase();
+      const password = formData.password;
+
+      if (email === 'admin@divinespark.com') {
+        // Accept any password for admin
+        localStorage.setItem('authToken', 'true');
+        localStorage.setItem('userRole', 'admin');
+        localStorage.setItem('adminToken', 'true');
+        navigate('/admin/dashboard', { replace: true });
+        return;
+      }
+
+      if (email === 'user@divinespark.com' && password === 'user123') {
+        localStorage.setItem('authToken', 'true');
+        localStorage.setItem('userRole', 'user');
+        navigate('/sessions', { replace: true });
+        return;
+      }
+
+      setErrors({ password: 'Invalid credentials' });
       
     } catch (error) {
       console.error('Login failed:', error);
@@ -87,6 +109,10 @@ const LoginPage = () => {
       <div className="text-center mb-8 animate-slide-up">
         <h1 className="text-3xl font-semibold text-gray-900 mb-2">Welcome Back to DivineSpark</h1>
         <p className="text-gray-600">Enter your details to continue your journey.</p>
+        <div className="mt-3 text-xs text-gray-500">
+          <div>Admin: admin@divinespark.com (any password)</div>
+          <div>User: user@divinespark.com / user123</div>
+        </div>
       </div>
 
       {/* Form */}
