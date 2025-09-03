@@ -5,6 +5,9 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { cn } from '../../utils/cn';
 import { ArrowLeft, Mail, Lock } from 'lucide-react';
+import { authAPI } from '../../utils/api';
+import { jwtDecode } from 'jwt-decode';
+
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -17,13 +20,13 @@ const LoginPage = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
     }
-    
+
     const isAdmin = formData.email.trim().toLowerCase() === 'admin@divinespark.com';
     if (!isAdmin) {
       if (!formData.password) {
@@ -32,45 +35,59 @@ const LoginPage = () => {
         newErrors.password = 'Password must be at least 6 characters';
       }
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
-    
+
     setIsLoading(true);
-    
+    setErrors({}); // Clear previous errors
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const email = formData.email.trim().toLowerCase();
-      const password = formData.password;
+      // 1. Call the login endpoint from your api service
+      const response = await authAPI.login(formData);
 
-      if (email === 'admin@divinespark.com') {
-        // Accept any password for admin
-        localStorage.setItem('authToken', 'true');
-        localStorage.setItem('userRole', 'admin');
+      // 2. On success, get the token from the response
+      const { token } = response.data;
+
+      // 3. Decode the token to get user details and roles
+      // Note: The claim name for roles ('roles' here) must match what your backend JWT utility uses.
+      const decodedToken = jwtDecode(token);
+      const roles = decodedToken.roles || [];
+
+      // 4. Determine user role (e.g., check if 'ROLE_ADMIN' is present)
+      const userRole = roles.includes('ROLE_ADMIN') ? 'admin' : 'user';
+
+      // 5. Store the token and user role in localStorage
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('userRole', userRole);
+
+      // If the user is an admin, also set the admin token if your app uses it
+      if (userRole === 'admin') {
         localStorage.setItem('adminToken', 'true');
+      }
+
+      // 6. Navigate to the appropriate dashboard based on role
+      if (userRole === 'admin') {
         navigate('/admin/dashboard', { replace: true });
-        return;
-      }
-
-      if (email === 'user@divinespark.com' && password === 'user123') {
-        localStorage.setItem('authToken', 'true');
-        localStorage.setItem('userRole', 'user');
+      } else {
         navigate('/sessions', { replace: true });
-        return;
       }
 
-      setErrors({ password: 'Invalid credentials' });
-      
     } catch (error) {
       console.error('Login failed:', error);
+      // 7. Handle errors from the API
+      if (error.response && error.response.status === 401) {
+        // If it's a 401, it's invalid credentials
+        setErrors({ password: 'Invalid email or password. Please try again.' });
+      } else {
+        // For other errors (e.g., network error, server down)
+        setErrors({ password: 'An unexpected error occurred. Please try again later.' });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -82,7 +99,7 @@ const LoginPage = () => {
       ...prev,
       [name]: value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
@@ -96,15 +113,15 @@ const LoginPage = () => {
     <AuthCard>
       {/* Back Button */}
       <div className="mb-6">
-        <Link 
-          to="/" 
+        <Link
+          to="/"
           className="inline-flex items-center text-sm text-gray-600 hover:text-primary-600 transition-colors duration-200"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Home
         </Link>
       </div>
-      
+
       {/* Header */}
       <div className="text-center mb-8 animate-slide-up">
         <h1 className="text-3xl font-semibold text-gray-900 mb-2">Welcome Back to DivineSpark</h1>
@@ -195,8 +212,8 @@ const LoginPage = () => {
       <div className="mt-6 text-center animate-slide-up">
         <p className="text-gray-600 text-sm">
           Don't have an account?{' '}
-          <Link 
-            to="/register" 
+          <Link
+            to="/register"
             className="text-primary-600 hover:text-primary-700 font-medium transition-colors duration-200 hover:underline"
           >
             Register
