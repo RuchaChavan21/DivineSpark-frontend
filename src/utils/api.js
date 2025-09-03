@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8081/api/',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -18,30 +18,21 @@ api.interceptors.request.use(
     }
     return config
   },
-  (error) => {
-    return Promise.reject(error)
-  }
+  (error) => Promise.reject(error)
 )
 
 // Response interceptor to handle common errors
 api.interceptors.response.use(
-  (response) => {
-    return response
-  },
+  (response) => response,
   (error) => {
-    // Handle common error scenarios
     if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
       localStorage.removeItem('authToken')
       window.location.href = '/login'
     } else if (error.response?.status === 403) {
-      // Forbidden
       console.error('Access forbidden')
     } else if (error.response?.status >= 500) {
-      // Server errors
       console.error('Server error:', error.response.data)
     }
-    
     return Promise.reject(error)
   }
 )
@@ -50,10 +41,9 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (userData) => api.post('/auth/register', userData),
-  sendOTP: (email) => api.post('/auth/send-otp', { email }),
-  verifyOTP: (email, otp) => api.post('/auth/verify-otp', { email, otp }),
-  logout: () => api.post('/auth/logout'),
-  refreshToken: () => api.post('/auth/refresh'),
+  sendOTP: (email) => api.post('/auth/request-otp', { email }), // FIXED
+  verifyOTP: (email, otp) => api.post('/auth/verify-otp', { email, otp }), // ✅ matches backend
+  // logout & refreshToken only if you add them later in Spring Boot
 }
 
 export const sessionsAPI = {
@@ -91,113 +81,6 @@ export const adminAPI = {
   getUserAnalytics: () => api.get('/admin/analytics/users'),
   getSessionAnalytics: () => api.get('/admin/analytics/sessions'),
   getRevenueAnalytics: () => api.get('/admin/analytics/revenue'),
-}
-
-// Mock API responses (for development)
-const mockDelay = (ms = 1000) => new Promise(resolve => setTimeout(resolve, ms))
-
-export const mockAPI = {
-  // Auth mock responses
-  login: async (credentials) => {
-    await mockDelay()
-    if (credentials.email === 'admin@divinespark.com') {
-      return {
-        data: {
-          user: { id: 3, email: 'admin@divinespark.com', role: 'admin', firstName: 'Admin', lastName: 'User' },
-          token: 'mock_admin_token'
-        }
-      }
-    } else if (credentials.email === 'user@example.com') {
-      return {
-        data: {
-          user: { id: 1, email: 'user@example.com', role: 'user', firstName: 'John', lastName: 'Doe' },
-          token: 'mock_user_token'
-        }
-      }
-    } else {
-      throw new Error('Invalid credentials')
-    }
-  },
-
-  sendOTP: async (email) => {
-    await mockDelay()
-    return { data: { success: true, message: 'OTP sent successfully' } }
-  },
-
-  verifyOTP: async (email, otp) => {
-    await mockDelay()
-    if (otp === '123456') {
-      return { data: { success: true, verified: true } }
-    } else {
-      throw new Error('Invalid OTP')
-    }
-  },
-
-  register: async (userData) => {
-    await mockDelay()
-    return {
-      data: {
-        user: { id: Date.now(), ...userData, role: 'user' },
-        token: 'mock_new_user_token'
-      }
-    }
-  },
-
-  // Sessions mock responses
-  getAllSessions: async (params) => {
-    await mockDelay(500)
-    const { mockSessions } = await import('../data/mockData')
-    
-    let filteredSessions = [...mockSessions]
-    
-    // Apply filters
-    if (params?.category) {
-      filteredSessions = filteredSessions.filter(s => s.category === params.category)
-    }
-    if (params?.isPaid !== undefined) {
-      filteredSessions = filteredSessions.filter(s => s.isPaid === params.isPaid)
-    }
-    if (params?.isUpcoming !== undefined) {
-      filteredSessions = filteredSessions.filter(s => s.isUpcoming === params.isUpcoming)
-    }
-    
-    return { data: filteredSessions }
-  },
-
-  bookSession: async (sessionId) => {
-    await mockDelay()
-    return { data: { success: true, message: 'Session booked successfully' } }
-  },
-
-  // Users mock responses
-  getCurrentUser: async () => {
-    await mockDelay()
-    const token = localStorage.getItem('authToken')
-    if (token === 'mock_admin_token') {
-      return { data: { id: 3, email: 'admin@divinespark.com', role: 'admin', firstName: 'Admin', lastName: 'User' } }
-    } else {
-      return { data: { id: 1, email: 'user@example.com', role: 'user', firstName: 'John', lastName: 'Doe' } }
-    }
-  },
-
-  getUserSessions: async () => {
-    await mockDelay()
-    const { getUserSessions } = await import('../data/mockData')
-    return { data: getUserSessions(1) }
-  },
-
-  // Admin mock responses
-  getDashboardStats: async () => {
-    await mockDelay()
-    const { mockStats } = await import('../data/mockData')
-    return { data: mockStats }
-  },
-
-  getAllUsers: async () => {
-    await mockDelay()
-    const { mockUsers } = await import('../data/mockData')
-    return { data: mockUsers }
-  },
 }
 
 export default api
