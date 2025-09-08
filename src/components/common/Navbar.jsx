@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../ui/Button'
 import logoImg from '../../assets/DivineSpark-Logo.jpg'
 
@@ -17,6 +17,10 @@ const navLinks = [
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [isSticky, setIsSticky] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('authToken'))
+  const [userRole, setUserRole] = useState(localStorage.getItem('userRole') || null)
+  const location = useLocation()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const onScroll = () => {
@@ -25,6 +29,32 @@ const Navbar = () => {
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  // Re-evaluate auth state on route changes and storage changes
+  useEffect(() => {
+    setIsAuthenticated(!!localStorage.getItem('authToken'))
+    setUserRole(localStorage.getItem('userRole') || null)
+  }, [location.pathname])
+
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === 'authToken' || e.key === 'userRole') {
+        setIsAuthenticated(!!localStorage.getItem('authToken'))
+        setUserRole(localStorage.getItem('userRole') || null)
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken')
+    localStorage.removeItem('userRole')
+    localStorage.removeItem('adminToken')
+    setIsAuthenticated(false)
+    setUserRole(null)
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div className={`fixed top-0 inset-x-0 z-50 transition-colors ${
@@ -48,9 +78,24 @@ const Navbar = () => {
               </Link>
             ))}
             <div className="h-6 w-px bg-gray-200" />
-            <Link to="/login">
-              <Button className="rounded-xl bg-violet-700 hover:bg-violet-800 text-white px-6 py-2 text-sm md:text-base">Login</Button>
-            </Link>
+            {!isAuthenticated ? (
+              <Link to="/login">
+                <Button className="rounded-xl bg-violet-700 hover:bg-violet-800 text-white px-6 py-2 text-sm md:text-base">Login</Button>
+              </Link>
+            ) : (
+              <div className="flex items-center gap-2">
+                {userRole === 'admin' ? (
+                  <Link to="/admin/dashboard">
+                    <Button className="rounded-xl bg-violet-700 hover:bg-violet-800 text-white px-6 py-2 text-sm md:text-base">Dashboard</Button>
+                  </Link>
+                ) : (
+                  <Link to="/sessions">
+                    <Button className="rounded-xl bg-violet-700 hover:bg-violet-800 text-white px-6 py-2 text-sm md:text-base">Sessions</Button>
+                  </Link>
+                )}
+                <Button onClick={handleLogout} className="rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-900 px-6 py-2 text-sm md:text-base">Logout</Button>
+              </div>
+            )}
           </div>
 
           <button
@@ -84,7 +129,27 @@ const Navbar = () => {
                     {link.label}
                   </Link>
                 ))}
-               
+                <div className="h-px w-full bg-gray-200 my-2" />
+                {!isAuthenticated ? (
+                  <Link to="/login" onClick={() => setIsOpen(false)} className="px-3 py-3 rounded-xl">
+                    <Button className="w-full rounded-xl bg-violet-700 hover:bg-violet-800 text-white px-6 py-2 text-sm md:text-base">Login</Button>
+                  </Link>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {userRole === 'admin' ? (
+                      <Link to="/admin/dashboard" onClick={() => setIsOpen(false)} className="px-3 py-3 rounded-xl">
+                        <Button className="w-full rounded-xl bg-violet-700 hover:bg-violet-800 text-white px-6 py-2 text-sm md:text-base">Dashboard</Button>
+                      </Link>
+                    ) : (
+                      <Link to="/sessions" onClick={() => setIsOpen(false)} className="px-3 py-3 rounded-xl">
+                        <Button className="w-full rounded-xl bg-violet-700 hover:bg-violet-800 text-white px-6 py-2 text-sm md:text-base">Sessions</Button>
+                      </Link>
+                    )}
+                    <div className="px-3 py-3">
+                      <Button onClick={() => { setIsOpen(false); handleLogout() }} className="w-full rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-900 px-6 py-2 text-sm md:text-base">Logout</Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
