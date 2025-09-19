@@ -198,8 +198,8 @@
         const { token } = response.data
         localStorage.setItem('authToken', token)
         console.log('Registration successful:', response.data.user)
-        // Optionally redirect to dashboard/home
-        window.location.href = '/dashboard'
+        // Redirect to landing page on successful registration
+        window.location.href = '/sessions'
       } catch (error) {
         console.error('Registration error:', error)
         console.error('Error response:', error.response?.data)
