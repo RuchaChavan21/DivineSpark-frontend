@@ -12,6 +12,7 @@ import ContactPage from './pages/ContactPage'
 import DonationPage from './pages/DonationPage'
 import ReviewsPage from './pages/ReviewsPage'
 import SessionsPage from './pages/SessionsPage'
+import SessionDetailPage from './pages/SessionDetailPage'
 import AdminLoginPage from './pages/admin/AdminLoginPage'
 import AdminDashboard from './pages/admin/AdminDashboard'
 
@@ -136,6 +137,20 @@ function App() {
                   transition={{ duration: 0.3 }}
                 >
                   <SessionsPage />
+                </motion.div>
+              } 
+            />
+
+            <Route 
+              path="/sessions/:id" 
+              element={
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <SessionDetailPage />
                 </motion.div>
               } 
             />

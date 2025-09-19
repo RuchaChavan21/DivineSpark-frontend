@@ -2,7 +2,8 @@ import axios from 'axios'
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8081/api/',
+  // Ensure no trailing slash to avoid double slashes when joining paths
+  baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:8081/api').replace(/\/$/, ''),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -12,8 +13,18 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
+    const urlPath = (config.url || '')
+      .replace(/^https?:\/\/[^/]+/i, '') // strip absolute base if present
+      .replace(/^\//, '')
+
+    // Do NOT attach Authorization for public auth endpoints
+    const isPublicAuthEndpoint = urlPath.startsWith('auth/request-otp') ||
+      urlPath.startsWith('auth/verify-otp') ||
+      urlPath.startsWith('auth/login') ||
+      urlPath.startsWith('auth/register')
+
     const token = localStorage.getItem('authToken')
-    if (token) {
+    if (token && !isPublicAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config
@@ -39,48 +50,49 @@ api.interceptors.response.use(
 
 // API endpoints
 export const authAPI = {
-  login: (credentials) => api.post('/auth/login', credentials),
-  register: (userData) => api.post('/auth/register', userData),
-  sendOTP: (email) => api.post('/auth/request-otp', { email }), // FIXED
-  verifyOTP: (email, otp) => api.post('/auth/verify-otp', { email, otp }), // ✅ matches backend
+  login: (credentials) => api.post('auth/login', credentials),
+  register: (userData) => api.post('auth/register', userData),
+  sendOTP: (email) => api.post('auth/request-otp', { email }),
+  verifyOTP: (email, otp) => api.post('auth/verify-otp', { email, otp }),
   // logout & refreshToken only if you add them later in Spring Boot
 }
 
 export const sessionsAPI = {
-  getAllSessions: (params) => api.get('/sessions', { params }),
-  getSessionById: (id) => api.get(`/sessions/${id}`),
-  createSession: (sessionData) => api.post('/sessions', sessionData),
-  updateSession: (id, sessionData) => api.put(`/sessions/${id}`, sessionData),
-  deleteSession: (id) => api.delete(`/sessions/${id}`),
-  bookSession: (sessionId) => api.post(`/sessions/${sessionId}/book`),
-  cancelBooking: (sessionId) => api.delete(`/sessions/${sessionId}/book`),
-  getSessionAttendees: (sessionId) => api.get(`/sessions/${sessionId}/attendees`),
+  getAllSessions: (params) => api.get('sessions', { params }),
+  getAllSessionsAdmin: (params) => api.get('sessions/admin', { params }),
+  getSessionById: (id) => api.get(`sessions/${id}`),
+  createSession: (sessionData) => api.post('sessions', sessionData),
+  updateSession: (id, sessionData) => api.put(`sessions/${id}`, sessionData),
+  deleteSession: (id) => api.delete(`sessions/${id}`),
+  bookSession: (sessionId) => api.post(`sessions/${sessionId}/book`),
+  cancelBooking: (sessionId) => api.delete(`sessions/${sessionId}/book`),
+  getSessionAttendees: (sessionId) => api.get(`sessions/${sessionId}/attendees`),
 }
 
 export const usersAPI = {
-  getCurrentUser: () => api.get('/users/me'),
-  updateProfile: (userData) => api.put('/users/me', userData),
-  getUserSessions: () => api.get('/users/me/sessions'),
-  getAllUsers: (params) => api.get('/users', { params }),
-  getUserById: (id) => api.get(`/users/${id}`),
-  updateUser: (id, userData) => api.put(`/users/${id}`, userData),
-  deleteUser: (id) => api.delete(`/users/${id}`),
+  getCurrentUser: () => api.get('users/me'),
+  updateProfile: (userData) => api.put('users/me', userData),
+  getUserSessions: () => api.get('users/me/sessions'),
+  getAllUsers: (params) => api.get('users', { params }),
+  getUserById: (id) => api.get(`users/${id}`),
+  updateUser: (id, userData) => api.put(`users/${id}`, userData),
+  deleteUser: (id) => api.delete(`users/${id}`),
 }
 
 export const paymentsAPI = {
-  createPaymentIntent: (sessionId) => api.post('/payments/create-intent', { sessionId }),
-  confirmPayment: (paymentIntentId) => api.post('/payments/confirm', { paymentIntentId }),
-  getPaymentHistory: () => api.get('/payments/history'),
-  getPaymentById: (id) => api.get(`/payments/${id}`),
-  refundPayment: (paymentId) => api.post(`/payments/${paymentId}/refund`),
+  createPaymentIntent: (sessionId) => api.post('payments/create-intent', { sessionId }),
+  confirmPayment: (paymentIntentId) => api.post('payments/confirm', { paymentIntentId }),
+  getPaymentHistory: () => api.get('payments/history'),
+  getPaymentById: (id) => api.get(`payments/${id}`),
+  refundPayment: (paymentId) => api.post(`payments/${paymentId}/refund`),
 }
 
 export const adminAPI = {
-  getDashboardStats: () => api.get('/admin/stats'),
-  getAllPayments: (params) => api.get('/admin/payments', { params }),
-  getUserAnalytics: () => api.get('/admin/analytics/users'),
-  getSessionAnalytics: () => api.get('/admin/analytics/sessions'),
-  getRevenueAnalytics: () => api.get('/admin/analytics/revenue'),
+  getDashboardStats: () => api.get('admin/stats'),
+  getAllPayments: (params) => api.get('admin/payments', { params }),
+  getUserAnalytics: () => api.get('admin/analytics/users'),
+  getSessionAnalytics: () => api.get('admin/analytics/sessions'),
+  getRevenueAnalytics: () => api.get('admin/analytics/revenue'),
 }
 
 export default api
