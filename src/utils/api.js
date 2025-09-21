@@ -38,9 +38,15 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken')
+      localStorage.removeItem('userRole')
+      localStorage.removeItem('adminToken')
       window.location.href = '/login'
     } else if (error.response?.status === 403) {
-      console.error('Access forbidden')
+      console.error('Access forbidden - insufficient permissions')
+      // Show user-friendly error message
+      if (typeof window !== 'undefined' && window.toast) {
+        window.toast.error('Access denied. You do not have permission to perform this action.')
+      }
     } else if (error.response?.status >= 500) {
       console.error('Server error:', error.response.data)
     }
@@ -61,12 +67,13 @@ export const sessionsAPI = {
   getAllSessions: (params) => api.get('sessions', { params }),
   getAllSessionsAdmin: (params) => api.get('sessions/admin', { params }),
   getSessionById: (id) => api.get(`sessions/${id}`),
-  createSession: (sessionData) => api.post('sessions', sessionData),
-  updateSession: (id, sessionData) => api.put(`sessions/${id}`, sessionData),
-  deleteSession: (id) => api.delete(`sessions/${id}`),
+  createSession: (sessionData) => api.post('sessions/admin/create', sessionData),
+  updateSession: (id, sessionData) => api.put(`sessions/admin/${id}`, sessionData),
+  deleteSession: (id) => api.delete(`sessions/admin/${id}`),
   bookSession: (sessionId) => api.post(`sessions/${sessionId}/book`),
   cancelBooking: (sessionId) => api.delete(`sessions/${sessionId}/book`),
   getSessionAttendees: (sessionId) => api.get(`sessions/${sessionId}/attendees`),
+  // getSessionRegistrants: (sessionId) => api.get(`sessions/admin/${sessionId}/registrants`), // TODO: Implement in backend
 }
 
 export const usersAPI = {
