@@ -35,8 +35,7 @@ const SessionsPage = () => {
       setIsLoading(true)
       setError('')
       try {
-        // Fetch from admin endpoint as requested
-        const { data } = await sessionsAPI.getAllSessionsAdmin()
+        const { data } = await sessionsAPI.getAllSessions()
         if (!isMounted) return
         // Normalize fields to match UI expectations
         const normalized = (Array.isArray(data) ? data : data?.content || []).map((s) => ({
@@ -48,7 +47,7 @@ const SessionsPage = () => {
             avatar: s.host?.avatar || 'https://images.unsplash.com/photo-1494790108755-2616b612b0e4?w=150',
             title: s.host?.title || '',
           },
-          category: s.category ?? s.categoryName ?? 'General',
+          category: s.category ?? s.categoryName ?? s.sessionCategory ?? s.SessionCategory ?? 'General',
           startTime: s.startTime ?? s.startDate ?? s.date ?? s.start,
           endTime: s.endTime ?? s.endDate ?? s.end,
           type: s.type ?? s.mode ?? (s.zoomLink ? 'ONLINE' : 'OFFLINE'),

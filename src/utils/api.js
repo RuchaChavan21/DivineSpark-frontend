@@ -102,4 +102,10 @@ export const adminAPI = {
   getRevenueAnalytics: () => api.get('admin/analytics/revenue'),
 }
 
+// Booking APIs (free and paid with Razorpay)
+export const bookFreeSession = (sessionId) => api.post(`book/free/${sessionId}`)
+export const initiatePaidSessionBooking = (sessionId) => api.post(`book/paid/${sessionId}`)
+export const confirmPaidSessionBooking = (paymentId, sessionId) =>
+  api.post('book/paid/confirm', null, { params: { paymentId, sessionId } })
+
 export default api
