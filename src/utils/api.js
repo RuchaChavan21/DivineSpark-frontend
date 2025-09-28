@@ -67,8 +67,12 @@ export const sessionsAPI = {
   getAllSessions: (params) => api.get('sessions', { params }),
   getAllSessionsAdmin: (params) => api.get('sessions/admin', { params }),
   getSessionById: (id) => api.get(`sessions/${id}`),
-  createSession: (sessionData) => api.post('sessions/admin/create', sessionData),
-  updateSession: (id, sessionData) => api.put(`sessions/admin/${id}`, sessionData),
+  createSession: (sessionData) => api.post('sessions/admin/create', sessionData, {
+    headers: { 'Content-Type': sessionData instanceof FormData ? 'multipart/form-data' : 'application/json' }
+  }),
+  updateSession: (id, sessionData) => api.put(`sessions/admin/${id}`, sessionData, {
+    headers: { 'Content-Type': sessionData instanceof FormData ? 'multipart/form-data' : 'application/json' }
+  }),
   deleteSession: (id) => api.delete(`sessions/admin/${id}`),
   bookSession: (sessionId) => api.post(`sessions/${sessionId}/book`),
   cancelBooking: (sessionId) => api.delete(`sessions/${sessionId}/book`),
