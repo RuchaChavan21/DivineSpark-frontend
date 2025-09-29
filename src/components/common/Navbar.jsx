@@ -48,12 +48,14 @@ const Navbar = () => {
   }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('userRole')
-    localStorage.removeItem('adminToken')
-    setIsAuthenticated(false)
-    setUserRole(null)
-    navigate('/login', { replace: true })
+    if (window.confirm('Are you sure you want to logout?')) {
+      localStorage.removeItem('authToken')
+      localStorage.removeItem('userRole')
+      localStorage.removeItem('adminToken')
+      setIsAuthenticated(false)
+      setUserRole(null)
+      navigate('/login', { replace: true })
+    }
   }
 
   return (

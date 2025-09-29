@@ -4,7 +4,7 @@ import { Button } from '../../../components/ui/Button';
 import { sessionsAPI } from '../../../utils/api';
 import { toast } from 'react-hot-toast';
 import { requireAdmin } from '../../../utils/auth';
-
+import { Calendar, Clock, Users, MapPin, DollarSign, Edit, Trash2, Eye, ExternalLink, Download } from 'lucide-react';
 const ManageSessions = () => {
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -269,8 +269,36 @@ const ManageSessions = () => {
   const openDetails = async (id) => {
     setSelectedId(id);
     setDetailOpen(true);
-    toast.info("Registrants feature coming soon!");
     setRegistrants([]);
+  };
+
+  // Handle Excel download for registrants
+  const downloadRegistrantsExcel = () => {
+    const session = sessions.find(s => s.id === selectedId);
+    if (!session) return;
+
+    // Create CSV content
+    const csvContent = [
+      ['Name', 'Email', 'Registration Date'],
+      ...registrants.map(r => [
+        r.name || 'N/A',
+        r.email || 'N/A',
+        new Date(r.registrationDate || Date.now()).toLocaleDateString()
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${session.title.replace(/[^a-zA-Z0-9]/g, '_')}_registrants.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    toast.success('Registrants list downloaded!');
   };
 
   return (
@@ -278,87 +306,134 @@ const ManageSessions = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Manage Sessions</h2>
-          <p className="text-sm text-gray-500">Create, edit, and view registrations for each session.</p>
+          <h2 className="text-3xl font-bold text-gray-900">Manage Sessions</h2>
+          <p className="text-gray-600 mt-2">Create, edit, and view your meditation sessions.</p>
         </div>
         <Button 
-          className="bg-violet-700 hover:bg-violet-800 text-white rounded-xl" 
+          className="bg-violet-700 hover:bg-violet-800 text-white rounded-xl px-6 py-3" 
           onClick={() => setIsOpen(true)}
         >
           Create New Session
         </Button>
       </div>
 
-      {/* Table */}
-      <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow">
-        <table className="w-full text-sm">
-          <thead className="bg-violet-50">
-            <tr className="text-left text-gray-800">
-              <th className="px-4 py-2 text-black">Title</th>
-              <th className="px-4 py-2 text-black">Description</th>
-              <th className="px-4 py-2 text-black">Start Time</th>
-              <th className="px-4 py-2 text-black">End Time</th>
-              <th className="px-4 py-2 text-black">Type</th>
-              <th className="px-4 py-2 text-black">Price</th>
-              <th className="px-4 py-2 text-black">Zoom Link</th>
-              <th className="px-4 py-2 text-black">Guide Name</th>
-              <th className="px-4 py-2 text-black">Category</th>
-              <th className="px-4 py-2 text-black">Capacity</th>
-              <th className="px-4 py-2 text-black">Active</th>
-              <th className="px-4 py-2 text-black">Image</th>
-              <th className="px-4 py-2 text-black text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr><td colSpan="12" className="text-center p-8">Loading sessions...</td></tr>
-            ) : (
-              sessions.map((s, idx) => (
-                <tr key={s.id} className={idx % 2 ? 'bg-white' : 'bg-violet-50/50'}>
-                  <td className="px-4 py-2 font-medium text-gray-900">{s.title}</td>
-                  <td className="px-4 py-2 text-gray-700 max-w-[200px] truncate">{s.description}</td>
-                  <td className="px-4 py-2 text-gray-700">{new Date(s.startTime).toLocaleString()}</td>
-                  <td className="px-4 py-2 text-gray-700">{s.endTime ? new Date(s.endTime).toLocaleString() : 'N/A'}</td>
-                  <td className="px-4 py-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      s.type === 'FREE' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {s.type}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2 text-gray-700">
-                    {s.type === 'PAID' ? `₹${s.price || 0}` : 'Free'}
-                  </td>
-                  <td className="px-4 py-2 text-violet-700 truncate max-w-[160px]">
-                    {s.zoomLink ? (
-                      <a href={s.zoomLink} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                        Join Meeting
-                      </a>
-                    ) : 'N/A'}
-                  </td>
-                  <td className="px-4 py-2 text-gray-700">{s.guideName || 'N/A'}</td>
-                  <td className="px-4 py-2 text-gray-700">{s.sessionCategory || 'N/A'}</td>
-                  <td className="px-4 py-2 text-gray-700">{s.capacity || 'N/A'}</td>
-                  <td className="px-4 py-2 text-gray-700">{s.active ? 'Yes' : 'No'}</td>
-                  <td className="px-4 py-2">
-                    {s.imageUrl && (
-                      <img src={s.imageUrl} alt="Session Thumbnail" className="h-10 w-10 object-cover rounded-lg" />
-                    )}
-                  </td>
-                  <td className="px-4 py-2">
-                    <div className="flex items-center gap-3 justify-end">
-                      <button className="text-violet-700 hover:underline" onClick={() => openDetails(s.id)}>View Registrants</button>
-                      <span className="text-gray-300">|</span>
-                      <button className="text-violet-700 hover:underline" onClick={() => onEdit(s)}>Edit</button>
-                      <button className="text-red-600 hover:underline" onClick={() => onDelete(s.id)}>Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* Sessions Grid */}
+{isLoading ? (
+  <div className="flex items-center justify-center py-12">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600 mx-auto mb-4"></div>
+      <p className="text-gray-500">Loading sessions...</p>
+    </div>
+  </div>
+) : sessions.length === 0 ? (
+  <div className="text-center py-12">
+    <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+    <p className="text-gray-500">No sessions found. Create your first session!</p>
+  </div>
+) : (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {sessions.map((session, index) => {
+      const getTypeBadgeColor = (type) => {
+        switch (type) {
+          case 'FREE':
+            return 'bg-green-100 text-green-800 border-green-200';
+          case 'PAID':
+            return 'bg-blue-100 text-blue-800 border-blue-200';
+          case 'ONLINE':
+            return 'bg-purple-100 text-purple-800 border-purple-200';
+          case 'OFFLINE':
+            return 'bg-orange-100 text-orange-800 border-orange-200';
+          default:
+            return 'bg-gray-100 text-gray-800 border-gray-200';
+        }
+      };
+
+      const truncateText = (text, maxLength = 100) => {
+        if (!text) return '';
+        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+      };
+
+      return (
+        <motion.div
+          key={session.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.1 }}
+          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+          className="bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden"
+          onClick={() => openDetails(session.id)}
+        >
+          <div className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+                {session.title}
+              </h3>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getTypeBadgeColor(session.type)}`}>
+                {session.type}
+              </span>
+            </div>
+            
+            <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+              {truncateText(session.description)}
+            </p>
+            
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center text-sm text-gray-500">
+                <Calendar className="h-4 w-4 mr-2" />
+                {new Date(session.startTime).toLocaleDateString()}
+              </div>
+              <div className="flex items-center text-sm text-gray-500">
+                <Clock className="h-4 w-4 mr-2" />
+                {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </div>
+              {session.capacity && (
+                <div className="flex items-center text-sm text-gray-500">
+                  <Users className="h-4 w-4 mr-2" />
+                  {session.capacity} seats
+                </div>
+              )}
+              {session.type === 'PAID' && (
+                <div className="flex items-center text-sm text-gray-500">
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  ₹{session.price || 0}
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(session);
+                  }}
+                  className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="Edit Session"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(session.id);
+                  }}
+                  className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Delete Session"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="flex items-center text-xs text-gray-400">
+                <Eye className="h-3 w-3 mr-1" />
+                Click to view details
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      );
+    })}
+  </div>
+)}
 
       {/* Create/Edit Session Modal */}
       <AnimatePresence>
@@ -574,54 +649,180 @@ const ManageSessions = () => {
         )}
       </AnimatePresence>
 
-      {/* View Registrants Modal */}
+      {/* Session Details Modal */}
       <AnimatePresence>
-        {detailOpen && (
+        {detailOpen && selectedId && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             onClick={() => setDetailOpen(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  Session Registrants
-                </h3>
-                <button
-                  onClick={() => setDetailOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
+              {(() => {
+                const session = sessions.find(s => s.id === selectedId);
+                if (!session) return null;
+                
+                const getTypeBadgeColor = (type) => {
+                  switch (type) {
+                    case 'FREE': return 'bg-green-100 text-green-800 border-green-200';
+                    case 'PAID': return 'bg-blue-100 text-blue-800 border-blue-200';
+                    case 'ONLINE': return 'bg-purple-100 text-purple-800 border-purple-200';
+                    case 'OFFLINE': return 'bg-orange-100 text-orange-800 border-orange-200';
+                    default: return 'bg-gray-100 text-gray-800 border-gray-200';
+                  }
+                };
 
-              <div className="space-y-4">
-                {registrants.length > 0 ? (
-                  <div className="space-y-2">
-                    {registrants.map((registrant, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                return (
+                  <>
+                    {/* Header */}
+                    <div className="bg-gray-800 px-6 py-4">
+                      <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-gray-900">{registrant.name || registrant.email}</p>
-                          <p className="text-sm text-gray-500">{registrant.email}</p>
+                          <h3 className="text-2xl font-bold text-white">{session.title}</h3>
+                          <p className="text-gray-300 mt-1">{session.sessionCategory || 'Session Details'}</p>
                         </div>
-                        <span className="text-sm text-gray-500">
-                          Registered: {new Date(registrant.registrationDate || Date.now()).toLocaleDateString()}
-                        </span>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => {
+                              setDetailOpen(false);
+                              onDelete(session.id);
+                            }}
+                            className="text-white hover:text-red-300 p-2 hover:bg-red-600/20 rounded-lg transition-colors"
+                            title="Delete Session"
+                          >
+                            <Trash2 className="h-5 w-5 text-white" />
+                          </button>
+                          <button
+                            onClick={() => setDetailOpen(false)}
+                            className="text-white hover:text-gray-300 p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          >
+                            <span className="text-white text-xl font-bold">✕</span>
+                          </button>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-center py-8">No registrants found for this session.</p>
-                )}
-              </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
+                      <div className="space-y-4">
+                        {/* Session Information */}
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">Session Information</h4>
+                          <div className="space-y-3">
+                            <div className="flex items-center">
+                              <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getTypeBadgeColor(session.type)}`}>
+                                {session.type}
+                              </span>
+                              {!session.active && (
+                                <span className="ml-2 px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">
+                                  Inactive
+                                </span>
+                              )}
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <p className="text-gray-700">{session.description}</p>
+                            </div>
+                            {session.guideName && (
+                              <div className="flex items-center text-gray-600">
+                                <Users className="h-5 w-5 mr-2" />
+                                <span>Guide: {session.guideName}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Schedule & Pricing */}
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">Schedule & Pricing</h4>
+                          <div className="space-y-3">
+                            <div className="flex items-center text-gray-600">
+                              <Calendar className="h-5 w-5 mr-2" />
+                              <span>Start: {new Date(session.startTime).toLocaleString()}</span>
+                            </div>
+                            {session.endTime && (
+                              <div className="flex items-center text-gray-600">
+                                <Clock className="h-5 w-5 mr-2" />
+                                <span>End: {new Date(session.endTime).toLocaleString()}</span>
+                              </div>
+                            )}
+                            {session.capacity && (
+                              <div className="flex items-center text-gray-600">
+                                <Users className="h-5 w-5 mr-2" />
+                                <span>Capacity: {session.capacity} participants</span>
+                              </div>
+                            )}
+                            {session.type === 'PAID' && (
+                              <div className="flex items-center text-gray-600">
+                                <DollarSign className="h-5 w-5 mr-2" />
+                                <span>Price: ₹{session.price || 0}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Meeting Link */}
+                        {session.zoomLink && (
+                          <div>
+                            <h4 className="text-lg font-semibold text-gray-900 mb-3">Meeting Link</h4>
+                            <a
+                              href={session.zoomLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              Join Meeting
+                            </a>
+                          </div>
+                        )}
+
+                        {/* Registrants */}
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">Registrants</h4>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            {registrants.length > 0 ? (
+                              <div className="space-y-2">
+                                {registrants.map((registrant, index) => (
+                                  <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
+                                    <div>
+                                      <p className="font-medium text-gray-900">{registrant.name || registrant.email}</p>
+                                      <p className="text-sm text-gray-500">{registrant.email}</p>
+                                    </div>
+                                    <span className="text-xs text-gray-500">
+                                      {new Date(registrant.registrationDate || Date.now()).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-gray-500 text-center py-4">No registrants yet</p>
+                            )}
+                          </div>
+                          
+                          {/* Download Excel Button */}
+                          <div className="mt-4 text-center">
+                            <button
+                              onClick={downloadRegistrantsExcel}
+                              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Download Excel Sheet
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </motion.div>
           </motion.div>
         )}
