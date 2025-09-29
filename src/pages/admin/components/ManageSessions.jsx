@@ -22,6 +22,7 @@ const ManageSessions = () => {
     sessionCategory: '',
     capacity: null,
     active: true,
+    imageUrl: '',
   });
 
   // Check authentication on component mount
@@ -38,6 +39,8 @@ const ManageSessions = () => {
   const [registrants, setRegistrants] = useState([]);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
+
+  const [imageFile, setImageFile] = useState(null);
 
   // Fetch all sessions from the backend
   const fetchSessions = async () => {
@@ -104,27 +107,73 @@ const ManageSessions = () => {
     fetchSessions();
   }, []);
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm(prev => ({ ...prev, imageUrl: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImageFile(null);
+      setForm(prev => ({ ...prev, imageUrl: '' }));
+    }
+  };
+
   // Handle form submission for CREATE and UPDATE
   const onSubmit = async (e) => {
     e.preventDefault();
-    const payload = { ...form };
-
+  
     try {
       requireAdmin();
+  
+      // 1. Create an object with all session data from the form
+      const sessionData = {
+        title: form.title,
+        description: form.description,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        type: form.type,
+        price: form.price,
+        zoomLink: form.zoomLink,
+        guideName: form.guideName, // Corrected from payload
+        sessionCategory: form.sessionCategory, // Corrected from payload
+        capacity: form.capacity,
+        active: form.active,
+      };
       
-      console.log('Submitting session data:', payload);
+      // 2. Create a new FormData object
+      const formData = new FormData();
+  
+      // 3. Append the session data as a JSON Blob named "session"
+      formData.append(
+        'session',
+        new Blob([JSON.stringify(sessionData)], { type: 'application/json' })
+      );
+  
+      // 4. Append the image file if it exists
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
       
+      console.log('Submitting session data...');
+  
       if (editingId) {
         console.log('Updating session with ID:', editingId);
-        await sessionsAPI.updateSession(editingId, payload);
+        // Your update API call might need adjustment if it also expects multipart
+        await sessionsAPI.updateSession(editingId, formData); 
         toast.success('Session updated successfully!');
       } else {
         console.log('Creating new session');
-        await sessionsAPI.createSession(payload);
+        await sessionsAPI.createSession(formData);
         toast.success('Session created successfully!');
       }
-      
-      setForm({ title: '', description: '', startTime: '', endTime: '', type: 'FREE', price: 0, zoomLink: '', guideName: '', sessionCategory: '', capacity: null, active: true });
+  
+      // Reset state and close modal
+      setForm({ title: '', description: '', startTime: '', endTime: '', type: 'FREE', price: 0, zoomLink: '', guideName: '', sessionCategory: '', capacity: null, active: true, imageUrl: '' });
+      setImageFile(null);
       setEditingId(null);
       setIsOpen(false);
       fetchSessions();
@@ -152,7 +201,8 @@ const ManageSessions = () => {
         const newSession = {
           id: Date.now(),
           ...payload,
-          startTime: payload.startTime || new Date().toISOString()
+          startTime: payload.startTime || new Date().toISOString(),
+          imageUrl: form.imageUrl, // Add imageUrl to new session for demo mode
         };
         
         if (editingId) {
@@ -201,8 +251,8 @@ const ManageSessions = () => {
     setForm({
       title: session.title || '',
       description: session.description || '',
-      startTime: session.startTime || '',
-      endTime: session.endTime || '',
+      startTime: session.startTime ? session.startTime.slice(0, 16) : '',
+      endTime: session.endTime ? session.endTime.slice(0, 16) : '',
       type: session.type || 'FREE',
       price: session.price || 0,
       zoomLink: session.zoomLink || '',
@@ -210,6 +260,7 @@ const ManageSessions = () => {
       sessionCategory: session.sessionCategory || '',
       capacity: session.capacity || null,
       active: session.active || true,
+      imageUrl: session.imageUrl || '',
     });
     setIsOpen(true);
   };
@@ -548,6 +599,21 @@ const ManageSessions = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                     placeholder="https://zoom.us/j/..."
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Session Image
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  />
+                  {form.imageUrl && (
+                    <img src={form.imageUrl} alt="Session Thumbnail" className="mt-2 h-20 w-20 object-cover rounded-lg" />
+                  )}
                 </div>
 
                 <div>

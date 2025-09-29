@@ -25,6 +25,7 @@ const formatTime = (timeString) => {
 }
 
 const SessionsPage = () => {
+  console.log("SessionsPage component is rendering."); // Added for debugging
   const [sessions, setSessions] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -37,6 +38,7 @@ const SessionsPage = () => {
       try {
         const { data } = await sessionsAPI.getAllSessions()
         if (!isMounted) return
+        console.log("Raw API response data:", data); // Debug log
         // Normalize fields to match UI expectations
         const normalized = (Array.isArray(data) ? data : data?.content || []).map((s) => ({
           id: s.id ?? s.sessionId ?? s._id,
@@ -58,7 +60,9 @@ const SessionsPage = () => {
           active: s.active ?? s.isActive ?? s.status === 'ACTIVE' ?? true,
           createdAt: s.createdAt ?? s.createdDate,
           updatedAt: s.updatedAt ?? s.lastModifiedDate,
+          imageUrl: s.imageUrl || '', // Add imageUrl
         }))
+        console.log("Normalized sessions data:", normalized); // Debug log
         setSessions(normalized)
       } catch (e) {
         console.error('Failed to fetch sessions', e)
@@ -106,8 +110,14 @@ const SessionsPage = () => {
                 const isFree = s.price === 0
                 return (
                   <Link key={s.id} to={`/sessions/${s.id}`} className="group rounded-xl border border-gray-200 hover:border-primary-300 transition-colors bg-white overflow-hidden">
+                    {s.imageUrl && (
+                      <div className="relative h-48 w-full overflow-hidden">
+                        <img src={s.imageUrl} alt={s.title} className="absolute inset-0 h-full w-full object-cover" />
+                      </div>
+                    )}
                     <div className="p-5">
                       <div className="flex items-start justify-between gap-3">
+                        {console.log("Session ID:", s.id, "Image URL:", s.imageUrl)} {/* Debug log */}
                         <h2 className="text-lg font-semibold text-gray-900 group-hover:text-primary-700">{s.title}</h2>
                         <span className={`text-xs px-2 py-1 rounded-full ${s.openForRegistration ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{s.openForRegistration ? 'Open' : 'Closed'}</span>
                       </div>
