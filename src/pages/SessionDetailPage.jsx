@@ -6,6 +6,50 @@ import { formatCurrency, formatDate, formatTime } from '../data/mockData'
 import { sessionsAPI, bookFreeSession, initiatePaidSessionBooking, confirmPaidSessionBooking } from '../utils/api'
 import BookingConfirmationDialog from '../components/common/BookingConfirmationDialog'
 
+// Safe date parsing utility function
+const parseDate = (dateStr) => {
+  if (!dateStr || typeof dateStr !== 'string') {
+    return null
+  }
+  
+  try {
+    let normalizedStr = dateStr.trim()
+    
+    // If the string ends with HH:mm (no seconds), add :00
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(normalizedStr)) {
+      normalizedStr += ':00'
+    }
+    
+    // Create date object
+    const date = new Date(normalizedStr)
+    
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+      return null
+    }
+    
+    return date
+  } catch (error) {
+    console.warn('Failed to parse date:', dateStr, error)
+    return null
+  }
+}
+
+// Safe date formatting functions
+const safeFormatDate = (dateObj) => {
+  if (!dateObj || isNaN(dateObj.getTime())) {
+    return 'TBD'
+  }
+  return formatDate(dateObj)
+}
+
+const safeFormatTime = (dateObj) => {
+  if (!dateObj || isNaN(dateObj.getTime())) {
+    return 'Time TBD'
+  }
+  return formatTime(dateObj)
+}
+
 const SessionDetailPage = () => {
   const { id } = useParams()
   const [session, setSession] = useState(null)
@@ -23,6 +67,10 @@ const SessionDetailPage = () => {
         const { data } = await sessionsAPI.getSessionById(id)
         if (!isMounted) return
         const s = data || {}
+        // Parse dates safely using our utility function
+        const startTimeStr = s.startTime ?? s.start_time ?? s.startDate ?? s.date ?? s.start ?? null
+        const endTimeStr = s.endTime ?? s.end_time ?? s.endDate ?? s.end ?? null
+        
         const normalized = {
           id: s.id ?? s.sessionId ?? s._id ?? id,
           title: s.title ?? s.name ?? 'Untitled Session',
@@ -33,8 +81,8 @@ const SessionDetailPage = () => {
             title: s.host?.title || '',
           },
           category: s.category ?? s.categoryName ?? s.sessionCategory ?? s.SessionCategory ?? 'General',
-          startTime: s.startTime ?? s.start_time ?? s.startDate ?? s.date ?? s.start ?? null,
-          endTime: s.endTime ?? s.end_time ?? s.endDate ?? s.end ?? null,
+          startTime: parseDate(startTimeStr),
+          endTime: parseDate(endTimeStr),
           type: s.type ?? s.mode ?? (s.zoomLink ? 'ONLINE' : 'OFFLINE'),
           zoomLink: s.zoomLink ?? s.meetingLink ?? '',
           price: Number(s.price ?? s.amount ?? 0),
@@ -60,8 +108,8 @@ const SessionDetailPage = () => {
   const computed = useMemo(() => {
     if (!session) return null
     const now = new Date()
-    const start = session.startTime ? new Date(session.startTime) : null
-    const end = session.endTime ? new Date(session.endTime) : null
+    const start = session.startTime // Already parsed as Date object or null
+    const end = session.endTime     // Already parsed as Date object or null
     const isUpcoming = start ? start >= now : true
     const spotsLeft = Math.max(0, (session.maxAttendees || 0) - (session.currentAttendees || 0))
     const isOnline = !!session.zoomLink
@@ -201,48 +249,210 @@ const SessionDetailPage = () => {
             <h1 className="text-3xl font-semibold text-gray-900">{computed.title}</h1>
             <p className="text-gray-700 mt-3">{computed.description}</p>
 
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="rounded-lg border border-gray-200 p-4">
-                <div className="text-xs text-gray-500">Guide</div>
-                <div className="mt-1 flex items-center gap-3">
-                  <img src={computed.host.avatar} alt={computed.host.name} className="w-10 h-10 rounded-full object-cover" />
-                  <div>
-                    <div className="text-gray-900 font-medium">{computed.host.name}</div>
-                    <div className="text-xs text-gray-500">{computed.host.title}</div>
+            {/* Enhanced Session Details Grid */}
+            <div className="mt-8 space-y-6">
+              {/* Guide Information - Without Profile Icon */}
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Session Guide</h3>
+                  <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                    Expert
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-xl font-bold text-gray-900">{computed.host.name}</div>
+                  <div className="text-gray-600">{computed.host.title}</div>
+                </div>
+              </div>
+
+              {/* Session Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Category */}
+                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center mb-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <div className="text-sm font-medium text-gray-500">Category</div>
+                    </div>
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">{computed.category}</div>
+                </div>
+
+                {/* Schedule - Only Start Date and Time */}
+                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center mb-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <div className="text-sm font-medium text-gray-500">Schedule</div>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-lg font-semibold text-gray-900">
+                      {safeFormatDate(start)}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {safeFormatTime(start)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Session Type */}
+                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center mb-3">
+                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isOnline ? "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" : "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"} />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <div className="text-sm font-medium text-gray-500">Session Type</div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        isOnline ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {isOnline ? 'Online' : 'Offline'}
+                      </span>
+                    </div>
+                    {isOnline && computed.zoomLink && (
+                      <div className="text-xs text-gray-500 break-all">
+                        Meeting Link Available
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-              <div className="rounded-lg border border-gray-200 p-4">
-                <div className="text-xs text-gray-500">Category</div>
-                <div className="mt-1 text-gray-900">{computed.category}</div>
-              </div>
-              <div className="rounded-lg border border-gray-200 p-4">
-                <div className="text-xs text-gray-500">Schedule</div>
-                <div className="mt-1 text-gray-900">{start ? `${formatDate(start)} · ${formatTime(start)}` : '—'}{end ? ` · Ends ${formatTime(end)}` : ''}</div>
-              </div>
-              <div className="rounded-lg border border-gray-200 p-4">
-                <div className="text-xs text-gray-500">Type</div>
-                <div className="mt-1 text-gray-900">{isOnline ? 'Online' : 'Offline'}</div>
-                {isOnline && (
-                  <div className="text-xs text-gray-600 mt-1 break-all">Zoom: {computed.zoomLink}</div>
-                )}
+
+              {/* Additional Session Information */}
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Session Overview</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">{computed.maxAttendees}</div>
+                    <div className="text-sm text-gray-500">Max Capacity</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">{spotsLeft}</div>
+                    <div className="text-sm text-gray-500">Spots Left</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">{computed.currentAttendees}</div>
+                    <div className="text-sm text-gray-500">Registered</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-2xl font-bold ${
+                      isUpcoming ? 'text-green-600' : 'text-gray-400'
+                    }`}>
+                      {isUpcoming ? '✓' : '✗'}
+                    </div>
+                    <div className="text-sm text-gray-500">Status</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           <aside className="lg:col-span-1">
-            <div className="rounded-xl border border-gray-200 p-5 sticky top-6">
-              <div className="text-2xl font-semibold text-gray-900">{isFree ? 'Free' : formatCurrency(computed.price)}</div>
-              <div className="text-sm text-gray-600 mt-1">Capacity: {computed.maxAttendees} · {spotsLeft} spots left</div>
-              <div className="text-sm mt-1">
-                <span className={`px-2 py-1 rounded-full text-xs ${isUpcoming ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{isUpcoming ? 'Active' : 'Inactive'}</span>
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sticky top-6 shadow-lg">
+              {/* Price Section */}
+              <div className="text-center mb-6">
+                <div className="text-3xl font-bold text-gray-900 mb-2">
+                  {isFree ? (
+                    <span className="text-green-600">Free Session</span>
+                  ) : (
+                    <span>₹{computed.price.toLocaleString('en-IN')}</span>
+                  )}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {isFree ? 'No payment required' : 'One-time payment'}
+                </div>
               </div>
 
-              <button onClick={handleBook} className="mt-5 w-full bg-primary-600 hover:bg-primary-700 text-white rounded-md py-2.5 font-medium disabled:opacity-50" disabled={!isUpcoming || spotsLeft === 0}>
-                {isUpcoming ? (spotsLeft === 0 ? 'Full' : 'Book Session') : 'Not Active'}
+              {/* Session Stats */}
+              <div className="space-y-4 mb-6">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-600">Capacity</span>
+                  <span className="font-semibold text-gray-900">{computed.maxAttendees} people</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-600">Available Spots</span>
+                  <span className={`font-semibold ${
+                    spotsLeft > 10 ? 'text-green-600' : spotsLeft > 0 ? 'text-orange-600' : 'text-red-600'
+                  }`}>
+                    {spotsLeft} left
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-sm text-gray-600">Status</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    isUpcoming ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {isUpcoming ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Booking Button */}
+              <button 
+                onClick={handleBook} 
+                className={`w-full py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200 ${
+                  !isUpcoming || spotsLeft === 0
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
+                }`}
+                style={!isUpcoming || spotsLeft === 0 ? {} : {backgroundColor: '#2E8B57', border: '2px solid #228B22'}}
+                onMouseEnter={(e) => {
+                  if (isUpcoming && spotsLeft > 0) {
+                    e.target.style.backgroundColor = '#228B22'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (isUpcoming && spotsLeft > 0) {
+                    e.target.style.backgroundColor = '#2E8B57'
+                  }
+                }}
+                disabled={!isUpcoming || spotsLeft === 0}
+              >
+                {isUpcoming ? (
+                  spotsLeft === 0 ? (
+                    <span className="flex items-center justify-center">
+                      <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                      Session Full
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Book This Session
+                    </span>
+                  )
+                ) : (
+                  'Session Inactive'
+                )}
               </button>
 
-              <div className="mt-4 text-xs text-gray-500">Auto-tracked: created and updated timestamps are kept server-side.</div>
+              {/* Additional Info */}
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <div className="text-xs text-gray-500 text-center">
+                  <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Secure booking with instant confirmation
+                </div>
+              </div>
             </div>
           </aside>
         </div>

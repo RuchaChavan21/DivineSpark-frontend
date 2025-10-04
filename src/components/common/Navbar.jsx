@@ -59,102 +59,209 @@ const Navbar = () => {
   }
 
   return (
-    <div className={`fixed top-0 inset-x-0 z-50 transition-colors ${
-      isSticky ? 'backdrop-blur bg-white/80 border-b border-gray-200' : 'bg-transparent'
+    <div className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
+      isSticky 
+        ? 'backdrop-blur-xl bg-white/90 border-b border-gray-200/50 shadow-xl shadow-gray-900/10' 
+        : 'bg-white/80 backdrop-blur-lg border-b border-gray-100/50 shadow-lg'
     }`}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center">
-            <img src={logoImg} alt="DivineSpark Logo" className="h-12 max-h-12 w-auto rounded-xl object-cover mr-3" />
-            <span className="font-semibold text-gray-900 text-xl">DivineSpark</span>
+          {/* Brand Logo */}
+          <Link 
+            to="/" 
+            className="flex items-center group transition-transform duration-200 hover:scale-105"
+          >
+            <div className="relative">
+              <img 
+                src={logoImg} 
+                alt="DivineSpark Logo" 
+                className="h-12 w-12 rounded-2xl object-cover shadow-lg ring-2 ring-white/50 group-hover:ring-purple-200/50 transition-all duration-200" 
+              />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-400/10 to-blue-400/10 group-hover:from-purple-400/20 group-hover:to-blue-400/20 transition-all duration-200"></div>
+            </div>
+            <div className="ml-4">
+              <span className="font-bold text-2xl text-gray-900 group-hover:text-purple-700 transition-all duration-200">
+                DivineSpark
+              </span>
+            </div>
           </Link>
 
-          <div className="hidden md:flex items-center gap-2">
-            {navLinks.map(link => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className="text-gray-600 hover:text-gray-900 transition-colors px-4 text-[16px] md:text-[18px]"
-              >
-                {link.label}
-              </Link>
-            ))}
-            <div className="h-6 w-px bg-gray-200" />
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center space-x-1">
+            {navLinks.map(link => {
+              const isActive = location.pathname === link.href
+              return (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className={`relative px-5 py-3 text-lg font-bold transition-all duration-200 group ${
+                    isActive 
+                      ? 'text-purple-800 bg-gradient-to-r from-purple-100 to-blue-100 rounded-xl shadow-md' 
+                      : 'text-gray-800 hover:text-purple-700'
+                  }`}
+                >
+                  <span className="relative z-10">{link.label}</span>
+                  {/* Animated underline */}
+                  <div className={`absolute bottom-1 left-1 right-1 h-1 bg-gradient-to-r from-purple-600 via-purple-700 to-blue-600 rounded-full transition-all duration-300 ${
+                    isActive 
+                      ? 'opacity-100 scale-100' 
+                      : 'opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100'
+                  }`}></div>
+                  {/* Hover background */}
+                  <div className={`absolute inset-0 rounded-xl bg-gradient-to-r from-purple-50 to-blue-50 transition-all duration-200 ${
+                    isActive 
+                      ? 'opacity-100' 
+                      : 'opacity-0 group-hover:opacity-100'
+                  }`}></div>
+                </Link>
+              )
+            })}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="hidden md:flex items-center space-x-3">
             {!isAuthenticated ? (
               <Link to="/login">
-                <Button className="rounded-xl bg-violet-700 hover:bg-violet-800 text-white px-6 py-2 text-sm md:text-base">Login</Button>
+                <button className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:from-purple-700 hover:to-purple-800 transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50">
+                  Login
+                </button>
               </Link>
             ) : (
-              <div className="flex items-center gap-2">
-                {userRole === 'admin' ? (
+              <div className="flex items-center space-x-3">
+                {userRole === 'admin' && (
                   <Link to="/admin/dashboard">
-                    <Button className="rounded-xl bg-violet-700 hover:bg-violet-800 text-white px-6 py-2 text-sm md:text-base">Dashboard</Button>
-                  </Link>
-                ) : (
-                  <Link to="/sessions">
-                    <Button className="rounded-xl bg-violet-700 hover:bg-violet-800 text-white px-6 py-2 text-sm md:text-base">Sessions</Button>
+                    <button className="px-8 py-3 font-bold rounded-full shadow-xl hover:shadow-2xl transform hover:scale-110 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-yellow-400/50" style={{backgroundColor: '#D4AF37', color: '#FFFFFF', border: '2px solid #B8941F'}}>
+                      Dashboard
+                    </button>
                   </Link>
                 )}
-                <Button onClick={handleLogout} className="rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-900 px-6 py-2 text-sm md:text-base">Logout</Button>
+                <button 
+                  onClick={handleLogout} 
+                  className="px-8 py-3 font-bold rounded-full shadow-xl hover:shadow-2xl transform hover:scale-110 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-gray-400/50" style={{backgroundColor: '#555555', color: '#FFFFFF', border: '2px solid #333333'}}
+                >
+                  Logout
+                </button>
               </div>
             )}
           </div>
 
+          {/* Mobile Menu Button */}
           <button
             aria-label="Toggle menu"
-            className="md:hidden inline-flex items-center justify-center h-10 w-10 rounded-xl border border-gray-200 hover:shadow-md transition-shadow"
+            className="md:hidden inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-white border border-gray-200 shadow-lg hover:shadow-xl hover:bg-gray-50 transform hover:scale-105 transition-all duration-200"
             onClick={() => setIsOpen(prev => !prev)}
           >
-            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            <div className="relative">
+              <Menu className={`h-6 w-6 text-gray-700 transition-all duration-200 ${
+                isOpen ? 'rotate-90 opacity-0' : 'rotate-0 opacity-100'
+              }`} />
+              <X className={`absolute inset-0 h-6 w-6 text-gray-700 transition-all duration-200 ${
+                isOpen ? 'rotate-0 opacity-100' : '-rotate-90 opacity-0'
+              }`} />
+            </div>
           </button>
         </div>
       </nav>
 
+      {/* Mobile Slide-out Menu */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.18 }}
-            className="md:hidden border-t border-gray-200 bg-white"
-          >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-              <div className="flex flex-col gap-2">
-                {navLinks.map(link => (
-                  <Link
-                    key={link.href}
-                    to={link.href}
-                    onClick={() => setIsOpen(false)}
-                    className="px-3 py-3 rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors text-[16px]"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-                <div className="h-px w-full bg-gray-200 my-2" />
-                {!isAuthenticated ? (
-                  <Link to="/login" onClick={() => setIsOpen(false)} className="px-3 py-3 rounded-xl">
-                    <Button className="w-full rounded-xl bg-violet-700 hover:bg-violet-800 text-white px-6 py-2 text-sm md:text-base">Login</Button>
-                  </Link>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    {userRole === 'admin' ? (
-                      <Link to="/admin/dashboard" onClick={() => setIsOpen(false)} className="px-3 py-3 rounded-xl">
-                        <Button className="w-full rounded-xl bg-violet-700 hover:bg-violet-800 text-white px-6 py-2 text-sm md:text-base">Dashboard</Button>
-                      </Link>
-                    ) : (
-                      <Link to="/sessions" onClick={() => setIsOpen(false)} className="px-3 py-3 rounded-xl">
-                        <Button className="w-full rounded-xl bg-violet-700 hover:bg-violet-800 text-white px-6 py-2 text-sm md:text-base">Sessions</Button>
-                      </Link>
-                    )}
-                    <div className="px-3 py-3">
-                      <Button onClick={() => { setIsOpen(false); handleLogout() }} className="w-full rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-900 px-6 py-2 text-sm md:text-base">Logout</Button>
-                    </div>
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="md:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+              onClick={() => setIsOpen(false)}
+            />
+            
+            {/* Slide-out Panel */}
+            <motion.div
+              initial={{ x: '100%', opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: '100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="md:hidden fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white backdrop-blur-xl border-l border-gray-200 shadow-2xl z-50"
+            >
+              <div className="flex flex-col h-full">
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200/50">
+                  <div className="flex items-center">
+                    <img 
+                      src={logoImg} 
+                      alt="DivineSpark Logo" 
+                      className="h-10 w-10 rounded-xl object-cover shadow-md" 
+                    />
+                    <span className="ml-3 font-bold text-xl text-gray-900">
+                      DivineSpark
+                    </span>
                   </div>
-                )}
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="p-2 rounded-xl bg-gray-100/50 hover:bg-gray-200/50 transition-colors duration-200"
+                  >
+                    <X className="h-5 w-5 text-gray-600" />
+                  </button>
+                </div>
+
+                {/* Navigation Links */}
+                <div className="flex-1 px-6 py-8 space-y-2">
+                  {navLinks.map((link, index) => {
+                    const isActive = location.pathname === link.href
+                    return (
+                      <motion.div
+                        key={link.href}
+                        initial={{ x: 50, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: index * 0.1, duration: 0.3 }}
+                      >
+                        <Link
+                          to={link.href}
+                          onClick={() => setIsOpen(false)}
+                          className={`block px-5 py-4 rounded-2xl text-xl font-bold transition-all duration-200 ${
+                            isActive
+                              ? 'bg-gradient-to-r from-purple-200 to-blue-200 text-purple-900 shadow-lg border-2 border-purple-300'
+                              : 'text-gray-800 hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 hover:text-purple-700'
+                          }`}
+                        >
+                          {link.label}
+                        </Link>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="p-6 border-t border-gray-200/50 space-y-3">
+                  {!isAuthenticated ? (
+                    <Link to="/login" onClick={() => setIsOpen(false)}>
+                      <button className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl hover:from-purple-700 hover:to-purple-800 transform hover:scale-[1.02] transition-all duration-200">
+                        Login
+                      </button>
+                    </Link>
+                  ) : (
+                    <div className="space-y-3">
+                      {userRole === 'admin' && (
+                        <Link to="/admin/dashboard" onClick={() => setIsOpen(false)}>
+                          <button className="w-full px-8 py-4 font-bold rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-yellow-400/50" style={{backgroundColor: '#D4AF37', color: '#FFFFFF', border: '2px solid #B8941F'}}>
+                            Dashboard
+                          </button>
+                        </Link>
+                      )}
+                      <button 
+                        onClick={() => { setIsOpen(false); handleLogout() }} 
+                        className="w-full px-8 py-4 font-bold rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-gray-400/50" style={{backgroundColor: '#555555', color: '#FFFFFF', border: '2px solid #333333'}}
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>
