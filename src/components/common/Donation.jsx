@@ -51,7 +51,7 @@ const Donation = () => {
           
           <p className="text-lg text-gray-700 mb-12 max-w-3xl mx-auto leading-relaxed">
             Your generous contribution helps us provide free sessions to those in need, 
-            support our spiritual guides, and build a global community of seekers on their journey to enlightenment.
+            support our spiritual guides, and build a global comm ty of seekers on their journey to enlightenment.
           </p>
 
           {/* Action Buttons */}

@@ -28,6 +28,7 @@ export const toAbsoluteUrl = (path) => {
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
+<<<<<<< HEAD
     const urlPath = (config.url || '')
       .replace(/^https?:\/\/[^/]+/i, '') // strip absolute base if present
       .replace(/^\//, '')
@@ -41,11 +42,33 @@ api.interceptors.request.use(
     const token = localStorage.getItem('authToken')
     if (token && !isPublicAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`
+=======
+    // Public endpoints that should NOT have Authorization header
+    const publicEndpoints = [
+      '/auth/register',
+      '/auth/login',
+      '/auth/request-otp',
+      '/auth/verify-otp',
+    ]
+
+    // Check if current request URL includes a public endpoint
+    const isPublic = publicEndpoints.some((endpoint) =>
+      config.url.includes(endpoint)
+    )
+
+    if (!isPublic) {
+      const token = localStorage.getItem('authToken')
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
+>>>>>>> 993160780893dbad5d00859e343eb27b1ebcbac1
     }
+
     return config
   },
   (error) => Promise.reject(error)
 )
+
 
 // Response interceptor to handle common errors
 api.interceptors.response.use(
