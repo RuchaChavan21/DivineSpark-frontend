@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import Navbar from '../components/common/Navbar'
 import Footer from '../components/common/Footer'
 import { formatCurrency } from '../data/mockData'
-import { sessionsAPI } from '../utils/api'
+import { sessionsAPI, toAbsoluteUrl } from '../utils/api'
 
 const formatDate = (dateString) => {
   try {
@@ -69,7 +69,10 @@ const SessionsPage = () => {
           active: s.active ?? s.isActive ?? s.status === 'ACTIVE' ?? true,
           createdAt: s.createdAt ?? s.createdDate,
           updatedAt: s.updatedAt ?? s.lastModifiedDate,
-          imageUrl: s.imageUrl || '', // Add imageUrl
+          imageUrl: (() => {
+            const raw = s.imageUrl ?? s.image ?? s.thumbnailUrl ?? s.imagePath ?? s.bannerUrl ?? ''
+            return toAbsoluteUrl(raw)
+          })(),
         }))
         console.log("Normalized sessions data:", normalized); // Debug log
         setSessions(normalized)

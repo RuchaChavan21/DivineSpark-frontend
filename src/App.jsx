@@ -10,6 +10,7 @@ import RegisterPage from './pages/auth/RegisterPage'
 import AboutPage from './pages/AboutPage'
 import ContactPage from './pages/ContactPage'
 import DonationPage from './pages/DonationPage'
+import DonateNowPage from './pages/DonateNowPage'
 import ReviewsPage from './pages/ReviewsPage'
 import SessionsPage from './pages/SessionsPage'
 import SessionDetailPage from './pages/SessionDetailPage'
@@ -39,6 +40,20 @@ function App() {
                   transition={{ duration: 0.3 }}
                 >
                   <LandingPage />
+                </motion.div>
+              } 
+            />
+
+            <Route 
+              path="/donate" 
+              element={
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <DonateNowPage />
                 </motion.div>
               } 
             />

@@ -182,24 +182,29 @@
       e.preventDefault()
       if (!validateRegistration()) return
     
-      setIsLoading(true)
-      try {
+      setIsLoading(true);
+    try {
         const userData = {
-          username: formData.firstName + ' ' + formData.lastName,
-          email: formData.email,
-          password: formData.password,
-          phoneNumber: formData.phone,
-          role: 'USER' // Try sending as single role name
-        }
-    
-        console.log('Sending registration data:', userData)
+            username: formData.firstName + ' ' + formData.lastName,
+            email: formData.email,
+            password: formData.password,
+            phoneNumber: formData.phone,
+            // roles: ['USER']  // ✅ REMOVE THIS LINE
+        };
+        
+        console.log('Sending registration data:', userData);
         const response = await authAPI.register(userData)
         console.log('Registration response:', response)
         const { token } = response.data
         localStorage.setItem('authToken', token)
         console.log('Registration successful:', response.data.user)
+<<<<<<< HEAD
         // Redirect to landing page on successful registration
         window.location.href = '/sessions'
+=======
+        // Optionally redirect to dashboard/home
+        window.location.href = '/LandingPage'
+>>>>>>> 993160780893dbad5d00859e343eb27b1ebcbac1
       } catch (error) {
         console.error('Registration error:', error)
         console.error('Error response:', error.response?.data)

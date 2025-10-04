@@ -10,9 +10,25 @@ const api = axios.create({
   },
 })
 
+// Derive the API origin (strip trailing "/api" when present) for building absolute asset URLs
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8081/api').replace(/\/$/, '')
+const API_ORIGIN = API_BASE.replace(/\/?api$/i, '')
+
+// Safely convert possibly-relative backend paths (e.g. "uploads/img.jpg" or "/files/..")
+// into absolute URLs rooted at the backend origin. If already absolute, return as-is.
+export const toAbsoluteUrl = (path) => {
+  if (!path) return ''
+  if (typeof path !== 'string') return ''
+  if (/^https?:\/\//i.test(path)) return path
+  const rel = path.replace(/^\//, '')
+  const origin = API_ORIGIN || ''
+  return `${origin}/${rel}`
+}
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
+<<<<<<< HEAD
     const urlPath = (config.url || '')
       .replace(/^https?:\/\/[^/]+/i, '') // strip absolute base if present
       .replace(/^\//, '')
@@ -26,11 +42,33 @@ api.interceptors.request.use(
     const token = localStorage.getItem('authToken')
     if (token && !isPublicAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`
+=======
+    // Public endpoints that should NOT have Authorization header
+    const publicEndpoints = [
+      '/auth/register',
+      '/auth/login',
+      '/auth/request-otp',
+      '/auth/verify-otp',
+    ]
+
+    // Check if current request URL includes a public endpoint
+    const isPublic = publicEndpoints.some((endpoint) =>
+      config.url.includes(endpoint)
+    )
+
+    if (!isPublic) {
+      const token = localStorage.getItem('authToken')
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
+>>>>>>> 993160780893dbad5d00859e343eb27b1ebcbac1
     }
+
     return config
   },
   (error) => Promise.reject(error)
 )
+
 
 // Response interceptor to handle common errors
 api.interceptors.response.use(
@@ -96,6 +134,16 @@ export const paymentsAPI = {
   getPaymentHistory: () => api.get('payments/history'),
   getPaymentById: (id) => api.get(`payments/${id}`),
   refundPayment: (paymentId) => api.post(`payments/${paymentId}/refund`),
+}
+
+// Donations API (Razorpay-backed similar to sessions booking)
+export const donationsAPI = {
+  // Backend base @RequestMapping("/api/donations")
+  // Create Razorpay order and persist pending Donation
+  createOrder: (payload) => api.post('donations/create-order', payload),
+  // Verify payment signature and mark donation as COMPLETED
+  verifyPayment: ({ razorpay_order_id, razorpay_payment_id, razorpay_signature }) =>
+    api.post('donations/verify-payment', { razorpay_order_id, razorpay_payment_id, razorpay_signature }),
 }
 
 export const adminAPI = {
