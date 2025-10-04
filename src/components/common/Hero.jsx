@@ -8,7 +8,7 @@ const Hero = () => {
   return (
     <section
       id="hero"
-      className="relative bg-no-repeat bg-cover bg-center min-h-[60vh] md:min-h-[80vh] flex items-center justify-center px-6 md:px-12 before:content-[''] before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/70 before:to-[#EDE9FE]/80"
+      className="relative bg-no-repeat bg-cover bg-center h-screen w-full flex items-center justify-center px-6 md:px-12 before:content-[''] before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/70 before:to-[#EDE9FE]/80"
       style={{ backgroundImage: `url(${heroBg})` }}
     >
       <div className="relative z-10 max-w-3xl mx-auto text-center">
@@ -25,7 +25,7 @@ const Hero = () => {
           </p>
           <div className="flex items-center justify-center gap-4">
             <Link to="/sessions">
-              <Button size="lg" className="min-w-[200px] bg-violet-600 hover:bg-violet-700 text-white rounded-xl hover:shadow-md">
+              <Button size="lg" className="min-w-[200px] rounded-xl hover:shadow-md" style={{backgroundColor: '#2E8B57', color: '#FFFFFF', border: '2px solid #228B22'}} onMouseEnter={(e) => e.target.style.backgroundColor = '#228B22'} onMouseLeave={(e) => e.target.style.backgroundColor = '#2E8B57'}>
                 Book a Session
               </Button>
             </Link>

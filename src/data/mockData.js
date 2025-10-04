@@ -302,16 +302,39 @@ export const formatCurrency = (amount) => {
   }).format(amount)
 }
 
-export const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
+export const formatDate = (input) => {
+  // Handle both Date objects and date strings
+  let date
+  
+  if (input instanceof Date) {
+    date = input
+  } else if (typeof input === 'string') {
+    date = new Date(input)
+  } else {
+    return 'Invalid Date'
+  }
+  
+  return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   })
 }
 
-export const formatTime = (timeString) => {
-  return new Date(`2024-01-01 ${timeString}`).toLocaleTimeString('en-US', {
+export const formatTime = (input) => {
+  // Handle both Date objects and time strings
+  let date
+  
+  if (input instanceof Date) {
+    date = input
+  } else if (typeof input === 'string') {
+    // Legacy support for time strings like "14:30"
+    date = new Date(`2024-01-01 ${input}`)
+  } else {
+    return 'Invalid Time'
+  }
+  
+  return date.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true
